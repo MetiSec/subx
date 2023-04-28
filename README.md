@@ -4,7 +4,7 @@
 
 ## description:
 
-subx is a tool for subdomain enumeration. subx utilize for automation in recon. 
+subx is a tool for subdomain enumeration. subx utilize for automation in recon. subx is first project for me. And in the next versions, new features will be added to this project. Features that are useful for bug bounty and recon
 
 ```
  ____        _         
