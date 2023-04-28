@@ -11,175 +11,198 @@
 # import package's
 #
 # 
-import os
-import requests
-import json
-import pyfiglet
 import argparse
+import os
 import pyfiglet
 
-#  Create domain input
-domain = input()
-
-#  create argument 
+# Create argument
 parser = argparse.ArgumentParser(prog="subx", description="Subdomain enumeration tool")
-# parser.add_argument("domain", action="store_true", help="Put domain form user")
-parser.add_argument("-c", "--crt", dest="crt", action="store_true", help="Subdomain enumeration with call crt.sh.")
-parser.add_argument("-d", "--dynamic", dest="dynamic", action="store_true", help="Subdomain enumeration with dynamic DNS brute force.")
-parser.add_argument("-st", "--static", dest="static", action="store_true", help="Subdomain enumeartion with static DNS brute force")
-parser.add_argument("-all", "--all-sub", dest="allsub", action="store_true", help="Full automate subdomain enumeration.")
-parser.add_argument("-ip", dest="ip", action="store_true", help="find all ip of subdomain's.")
-parser.add_argument("-sf", "--subf", dest="subf", action="store_true", help="Use public tools for subdomain enumeration")
-parser.add_argument("-s", "--silent", dest="silent", action="store_true", help="Silent mode program")
-parser.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="Verbose mode program")
-parser.add_argument("-wm", "--wordlist-maker", dest="wordlistmaker", action="store_true", help="Small wordlist maker.")
-parser.add_argument("-V", "--version", dest="version", action="store_true", help="Program version.")
-
-
+parser.add_argument("-d", dest="domain", help="Domain to find subdomains")
+parser.add_argument("-l", "-list", dest="list", help="file containing a list of domains for subdomain discovery")
+parser.add_argument("-dy", "--dynamic", dest="dynamic", action="store_true", help="Subdomain enumeration with dynamic DNS brute force.")
+parser.add_argument("-st", "--static", dest="static", action="store_true", help="Subdomain enumeration with static DNS brute force")
+parser.add_argument("-ss",dest="simplesub", action="store_true", help="Use the public subdomain enumeration tool")
+parser.add_argument("-all", "--all-sub", dest="allsub", action="store_true", help="Full automated subdomain enumeration.")
+parser.add_argument("-ip", dest="ipfinder", action="store_true", help="find all IP of subdomains.")
+parser.add_argument("-r", dest="resolver", help="resolver file for DNS brute force")
+parser.add_argument("-w", dest="wordlist", help="Wordlist file for DNS brute force")
+parser.add_argument("-silent", dest="silent", action="store_true", help="shows only subdomains in the output")
+parser.add_argument("-V", "-version", action="version", version="Subx version:  2.0")
 args = parser.parse_args()
-version = args.version
-crt = args.crt
+
+# Create namespace argument
+domain = args.domain
+list = args.list
 dynamic = args.dynamic
 static = args.static
+simplesub = args.simplesub
 allsub = args.allsub
-ip = args.ip
+ipfinder = args.ipfinder
+resolver = args.resolver
+wordlist = args.wordlist
 silent = args.silent
-verbose = args.verbose
-wrdlistmaker = args.wordlistmaker
-subf = args.subf
 
+# Create function's
 
-# Create Function's 
 def banner():
     # create Subx figlet
     bnr = pyfiglet.figlet_format("Subx")
     print(bnr)
 
-def crtc():
-    # Subdomain enumeration with call crt.sh provider
-    crt_Call = os.system(f"echo {domain} | bash main.sh crt")
-    print(crt_Call)
-
-def show_Version():
-    banner()
-    print("Automation subdomain enumeration tool")
-    print("Project by MetiSec              [Version: 1.0]")
 
 def dynamic_DNS_brute():
-    dnb = os.system(f"echo {domain} | bash main.sh dynamic")
-    print(dnb)
+    # Dynamic DNS brute force with single domain
+    os.system("mkdir tmp")
+    os.system(f'echo {domain} | subfinder -silent | rev | cut -d "." -f3 | rev | sort -u > tmp/dynamicDNS.txt')
+    os.system(f'echo {domain} | shuffledns -w tmp/dynamicDNS.txt -r {resolver} -silent')
+    os.system("rm -rf tmp")
 
-def static_DNS_brute():
-    snb = os.system(f"echo {domain} | bash main.sh static")
-    print(snb)
+def dynamic_DNS_brute_list():
+    # Dynamic DNS brute force with list domain
+    os.system("mkdir tmp")
+    os.system(f'cat {list} | subfinder -silent | rev | cut -d "." -f3 | rev | sort -u > tmp/dynamicDNS.txt')
+    os.system(f'cat {list} | shuffledns -w tmp/dynamicDNS.txt -r {resolver} -silent')
+    os.system("rm -rf tmp")
 
-def subf_Call():
-    subfc = os.system(f"echo {domain} | bash main.sh subf")
-    print(subfc)
+def static_DNS_brue():
+    # Static DNS brute force with single domain
+    os.system("mkdir tmp")
+    os.system(f'echo {domain} | shuffledns -w {wordlist} -r {resolver} -silent')
+    os.system("rm -rf tmp")
 
-def allsub_Call():
-    allsubc = os.system(f"echo {domain} | bash main.sh allsub")
-    print(allsubc)
+def static_DNS_brue_list():
+    # Static DNS brute with list domain
+    os.system("mkdir tmp")
+    os.system(f'cat {list} | shuffledns -w {wordlist} -r {resolver} -silent')
+    os.system("rm -rf tmp")
 
-def findIP():
-    find_Ip = os.system(f"echo {domain} | bash main.sh findip")
-    print(find_Ip)
+def simpleSub():
+    # Simple Subdomain enumeration with subfinder and assetfinder with single domain
+    os.system("mkdir tmp")
+    os.system(f"echo {domain} | subfinder -silent > tmp/simplesub.txt")
+    os.system(f"echo {domain} | assetfinder >> tmp/simplesub.txt")
+    os.system("cat tmp/simplesub.txt | sort -u")
+    os.system("rm -rf tmp")
 
-def wordlist_Maker():
-    command = os.system(f"echo {domain} | bash main.sh wmaker")
-    print(command)
+def simpleSub_list():
+    # Simple Subdomain enumeration with subfinder and assetfinder with list domain
+    os.system("mkdir tmp")
+    os.system(f"cat {list} | subfinder -silent > tmp/simplesub.txt")
+    os.system(f"cat {list} | assetfinder >> tmp/simplesub.txt")
+    os.system("cat tmp/simplesub.txt | sort -u")
+    os.system("rm -rf tmp")
 
-if version:
-    show_Version()
+def allSubf():
+    # Full automate subdomain discovery with single domain
+    os.system("mkdir tmp")
+    os.system(f"echo {domain} | subfinder -silent > tmp/simplesub.txt")
+    os.system(f"echo {domain} | assetfinder >> tmp/simplesub.txt")
+    os.system(f'echo {domain} | subfinder -silent | rev | cut -d "." -f3 | rev | sort -u > tmp/dynamicword.txt')
+    os.system(f'echo {domain} | shuffledns -w tmp/dynamicword.txt -r {resolver} -silent > tmp/dynamicDNS.txt')
+    os.system(f'echo {domain} | shuffledns -w {wordlist} -r {resolver} -silent > tmp/staticDNS.txt')
+    os.system("cat tmp/dynamicword.txt tmp/dynamicDNS.txt tmp/staticDNS.txt | sort -u > final.txt")
+    os.system("cat final.txt")
+    os.system("rm -rf tmp")
 
-if crt and silent:
-    crtc()
-elif crt and silent:
+def allSubf_list():
+    # Full automate subdomain discovery with list domain
+    os.system("mkdir tmp")
+    os.system(f"cat {list} | subfinder -silent > tmp/simplesub.txt")
+    os.system(f"cat {list} | assetfinder >> tmp/simplesub.txt")
+    os.system(f'cat {list} | subfinder -silent | rev | cut -d "." -f3 | rev | sort -u > tmp/dynamicword.txt')
+    os.system(f'cat {list} | shuffledns -w tmp/dynamicword.txt -r {resolver} -silent > tmp/dynamicDNS.txt')
+    os.system(f'cat {list} | shuffledns -w {wordlist} -r {resolver} -silent > tmp/staticDNS.txt')
+    os.system("cat tmp/dynamicword.txt tmp/dynamicDNS.txt tmp/staticDNS.txt | sort -u > final.txt")
+    os.system("cat final.txt")
+    os.system("rm -rf tmp")
+
+def ipfinderf():
+    # Find IP from subfinder output with single domain
+    os.system(f"echo {domain} | subfinder -silent | dnsx -a -ro -silent | sort -u")
+
+def ipfinderf_list():
+    # Find IP from subfinder output with list domain
+    os.system(f"cat {list} | subfinder -silent | dnsx -a -ro -silent sort -u")
+
+if domain and simplesub and silent:
+    # Silent mode [ Only show subdomain's]
+    simpleSub()
+elif domain and simplesub:
     banner()
-    crtc()
-elif crt and verbose:
+    simpleSub()
+
+if list and simplesub and silent:
+    # Silent mode [ Only show subdomain's]
+    simpleSub_list()
+elif list and simplesub:
     banner()
-    print("Run program for calling CRT.SH provider")
-    print("")
+    simpleSub()
 
 
-if dynamic and silent:
+if domain and dynamic and resolver and silent:
+    # Silent mode [ Only show subdomain's]
     dynamic_DNS_brute()
-elif dynamic:
+elif domain and dynamic and resolver:
     banner()
     dynamic_DNS_brute()
-elif dynamic and verbose:
-    banner()
-    print("Start dynamic DNS brute force")
-    dynamic_DNS_brute()
-    print("")
-    print("done")
-    
-if static and silent:
-    static_DNS_brute()
-elif static:
-    banner()
-    static_DNS_brute()
-elif static and verbose:
-    banner()
-    print(f"your domain: {domain}")
-    print("Run static DNS brute force")
-    static_DNS_brute()
-    print("")
-    print("DONE")
 
-if allsub and silent():
-    allsub_Call()
-elif allsub:
+if list and dynamic and resolver and silent:
+    # Silent mode [ Only show subdomain's]
+    dynamic_DNS_brute_list()
+elif list and dynamic and resolver:
     banner()
-    allsub_Call()
-elif allsub and verbose():
-    banner()
-    print(f"Domain: {domain}")
-    print("Run full automate subdomain enumeration")
-    allsub_Call()
-    print("")
-    print("DONE")
+    dynamic_DNS_brute_list()
 
+if domain and static and wordlist and resolver and silent:
+    # Silent mode [ Only show subdomain's]
+    static_DNS_brue()
+elif domain and static and wordlist and resolver:
+    banner()
+    static_DNS_brue()
 
-if subf and silent:
-    subf_Call()
-elif subf:
+if list and static and wordlist and resolver and silent:
+    # Silent mode [ Only show subdomain's]
+    static_DNS_brue_list()
+elif list and static and wordlist and resolver:
     banner()
-    subf_Call()
-elif subf and verbose:
-    banner()
-    print(f"Domain: {domain}")
-    print("Run simple subdmoain enumeration")
-    print("")
-    subf_Call()
-    print("")
-    print("DONE")
+    static_DNS_brue_list()
 
-if ip and silent:
-    findIP()
-elif ip:
+if domain and allsub and wordlist and resolver and silent:
+    # Silent mode [ Only show subdomain's]
+    allSubf()
+elif domain and allsub and wordlist and resolver:
     banner()
-    findIP()
-elif ip and verbose:
-    banner()
-    print("")
-    print(f"Domain:  {domain}")
-    print("")
-    findIP()
-    print("")
-    print("DONE")
+    allSubf()
 
-if wrdlistmaker and silent:
-    wordlist_Maker()
-elif wrdlistmaker:
+if list and allsub and wordlist and resolver and silent:
+    # Silent mode [ Only show subdomain's]
+    allSubf_list()
+elif list and allsub and wordlist and resolver:
     banner()
-    wordlist_Maker()
-elif wrdlistmaker and verbose:
+    allSubf_list()
+
+if domain and ipfinder and silent:
+    # Silent mode [ Only show subdomain's]
+    ipfinderf()
+elif domain and ipfinder:
     banner()
-    print("")
-    print(f"Domain:  {domain}")
-    print("")
-    wordlist_Maker()
-    print("")
-    print("DONE")
+    ipfinderf()
+
+if list and ipfinder and silent:
+    # Silent mode [ Only show subdomain's]
+    ipfinderf_list()
+elif list and ipfinder:
+    banner()
+    ipfinderf_list()
+
+# 
+# 
+# 
+#        ____        _         
+#       / ___| _   _| |____  __
+#       \___ \| | | | '_ \ \/ /
+#        ___) | |_| | |_) >  < 
+#       |____/ \__,_|_.__/_/\_\
+# 
+# 
+# 
